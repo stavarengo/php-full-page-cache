@@ -1,0 +1,21 @@
+{
+    "name": "stavarengo/php-full-page-cache",
+    "description": "PHP full page cache that follows the 'Cache-Control' HTTP header.",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Rafael Stavarengo",
+            "email": "faelsta@gmail.com",
+            "homepage": "https://www.linkedin.com/in/stavarengo"
+        }
+    ],
+    "require": {
+        "php": ">=7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sta\\FullPageCache\\": "src/PhpFullPageCache/"
+        }
+    }
+}
