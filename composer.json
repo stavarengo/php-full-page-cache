@@ -10,12 +10,42 @@
             "homepage": "https://www.linkedin.com/in/stavarengo"
         }
     ],
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+      "zf": {
+        "component": "Sta\\FullPageCache",
+        "module": "Sta\\FullPageCache",
+        "config-provider": "Sta\\FullPageCache\\ConfigProvider"
+      }
+    },
     "require": {
-        "php": ">=7.1"
+        "php": ">=7.1",
+        "cache/cache": "^1.0",
+        "guzzlehttp/psr7": "^1.5",
+        "psr/cache": "^1.0",
+        "psr/container": "^1.0",
+        "psr/http-message": "^1.0",
+        "zendframework/zend-http": "^2.10"
     },
     "autoload": {
         "psr-4": {
             "Sta\\FullPageCache\\": "src/PhpFullPageCache/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "StaTest\\FullPageCache\\": "test/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.0"
+    },
+    "scripts": {
+        "test": "phpunit --colors=always"
+    },
+    "suggest": {
+        "zendframework/zend-psr7bridge": "If you want to use this library with Zend Framework."
     }
 }
