@@ -6,14 +6,15 @@
  * Time: 09:36
  */
 
-namespace Sta\FullPageCache;
+namespace Sta\FullPageCache\FrameworkAdaptor\Zend;
 
 use Psr\Container\ContainerInterface;
+use Sta\FullPageCache\FullPageCache;
 
-class ZendEventListenerFactory
+class EventListenerFactory
 {
     public function __invoke(ContainerInterface $container)
     {
-        return new ZendEventListener($container->get(CacheProvider::class));
+        return new EventListener($container->get(FullPageCache::class));
     }
 }

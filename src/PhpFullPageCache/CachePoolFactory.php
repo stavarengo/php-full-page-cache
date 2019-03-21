@@ -28,7 +28,7 @@ class CachePoolFactory
     {
         return new FilesystemCachePool(
             new Filesystem(new Local(sys_get_temp_dir())),
-            CacheProvider::CACHE_NAMESPACE
+            FullPageCache::CACHE_NAMESPACE
         );
     }
 }

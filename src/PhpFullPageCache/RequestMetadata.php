@@ -9,7 +9,7 @@
 namespace Sta\FullPageCache;
 
 
-class CacheMetadata
+class RequestMetadata
 {
     /**
      * @var string[]
@@ -35,9 +35,9 @@ class CacheMetadata
 
     /**
      * @param string[] $vary
-     * @return CacheMetadata
+     * @return RequestMetadata
      */
-    public function setVary(array $vary): CacheMetadata
+    public function setVary(array $vary): RequestMetadata
     {
         $this->vary = $vary;
         return $this;

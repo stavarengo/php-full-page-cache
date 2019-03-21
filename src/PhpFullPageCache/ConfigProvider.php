@@ -2,6 +2,9 @@
 
 namespace Sta\FullPageCache;
 
+use Sta\FullPageCache\FrameworkAdaptor\Zend\EventListener;
+use Sta\FullPageCache\FrameworkAdaptor\Zend\EventListenerFactory;
+
 class ConfigProvider
 {
     public function __invoke()
@@ -21,8 +24,8 @@ class ConfigProvider
         return [
             'factories' => [
                 CachePoolFactory::class => CachePoolFactory::class,
-                CacheProvider::class => CacheProviderFactory::class,
-                ZendEventListener::class => ZendEventListenerFactory::class,
+                FullPageCache::class => FullPageCacheFactory::class,
+                EventListener::class => EventListenerFactory::class,
             ],
         ];
     }

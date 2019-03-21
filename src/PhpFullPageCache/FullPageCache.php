@@ -11,25 +11,32 @@ namespace Sta\FullPageCache;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Sta\FullPageCache\ContentNormalizerOfHeadersThatVary\ContentNormalizerOfHeadersThatVaryInterface;
 use Zend\Http\Header\CacheControl;
 
-class CacheProvider
+class FullPageCache
 {
-    public const CACHE_NAMESPACE = 'cely-full-page-cache';
-    public const HEADER_FULL_PAGE_CACHE = 'X-Full-Page-Cache';
+    public const CACHE_NAMESPACE = 'sta-full-page-cache';
+    public const HEADER_FULL_PAGE_CACHE = 'X-Sta-Full-Page-Cache';
 
     /**
      * @var CacheItemPoolInterface
      */
     protected $store;
+    /**
+     * @var ContentNormalizerOfHeadersThatVaryInterface[]
+     */
+    private $headerNormalizers;
 
     /**
      * CacheProvider constructor.
      * @param CacheItemPoolInterface $store
+     * @param ContentNormalizerOfHeadersThatVaryInterface[] $headerNormalizers
      */
-    public function __construct(CacheItemPoolInterface $store)
+    public function __construct(CacheItemPoolInterface $store, array $headerNormalizers)
     {
         $this->store = $store;
+        $this->headerNormalizers = $headerNormalizers;
     }
 
     public function getCachedResponse(RequestInterface $request): ?ResponseInterface
@@ -41,7 +48,7 @@ class CacheProvider
             return null;
         }
 
-        /** @var CacheMetadata $cacheMetadata */
+        /** @var RequestMetadata $cacheMetadata */
         $cacheMetadata = $cacheItem->get();
 
         $responseCacheId = $this->getResponseCacheId($request, $cacheMetadata->getVary());
@@ -94,7 +101,7 @@ class CacheProvider
 
         $metadataCacheId = $this->getMetadataCacheId($request);
         $cacheItem = $this->store->getItem($metadataCacheId);
-        $cacheItem->set(new CacheMetadata($vary));
+        $cacheItem->set(new RequestMetadata($vary));
         $cacheItem->expiresAfter($expiresAfter);
         $this->store->save($cacheItem);
     }
@@ -109,33 +116,20 @@ class CacheProvider
 
         $normalizedVaryHeaders = [];
         foreach ($varyHeaders as $header => $value) {
-            $header = strtolower($header);
+            $lowerCaseHeaderName = strtolower($header);
             $value = strtolower($value);
-
-            if ($header == 'accept-encoding') {
-                if (preg_match('~\bgzip\b~', $value)) {
-                    $value = 'gzip';
-                } else {
-                    $value = '';
+            foreach ($this->headerNormalizers as $headerNormalizer) {
+                if ($headerNormalizer->canNormalizeContentsFrom($lowerCaseHeaderName)) {
+                    $value = $headerNormalizer->normalize($value, $lowerCaseHeaderName);
                 }
-            } else if ($header == 'accept-language') {
-                $value = [];
-                if (preg_match('~en(-..){0,1}~', $value)) {
-                    $value[] = 'en';
-                }
-                if (preg_match('~pt(-..){0,1}~', $value)) {
-                    $value[] = 'pt';
-                }
-                $value = implode(',', $value);
             }
 
-            $normalizedVaryHeaders[] = $header . '=' . $value;
+            $normalizedVaryHeaders[] = $lowerCaseHeaderName . '=' . $value;
         }
 
         ksort($normalizedVaryHeaders);
 
         $cacheId = trim(
-        //https://$esRootUserName:$esRootUserPassword@es-main-temporary.stage.celebryts.com:9200
             sprintf(
                 '%s %s %s %s %s %s',
                 strtolower($request->getMethod()),

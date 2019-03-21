@@ -10,10 +10,10 @@ namespace Sta\FullPageCache;
 
 use Psr\Container\ContainerInterface;
 
-class CacheProviderFactory
+class FullPageCacheFactory
 {
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        return new CacheProvider($container->get(CachePoolFactory::class));
+        return new FullPageCache($container->get(CachePoolFactory::class));
     }
 }

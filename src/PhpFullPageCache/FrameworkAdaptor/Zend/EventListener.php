@@ -6,8 +6,9 @@
  * Time: 09:36
  */
 
-namespace Sta\FullPageCache;
+namespace Sta\FullPageCache\FrameworkAdaptor\Zend;
 
+use Sta\FullPageCache\FullPageCache;
 use Sta\FullPageCache\Exception\MissingComposerDependency;
 use Zend\EventManager\AbstractListenerAggregate;
 use Zend\EventManager\EventManagerInterface;
@@ -17,18 +18,18 @@ use Zend\Mvc\MvcEvent;
 use Zend\Psr7Bridge\Psr7Response;
 use Zend\Psr7Bridge\Psr7ServerRequest;
 
-class ZendEventListener extends AbstractListenerAggregate
+class EventListener extends AbstractListenerAggregate
 {
     /**
-     * @var CacheProvider
+     * @var FullPageCache
      */
     protected $cacheProvider;
 
     /**
      * ZendEventListener constructor.
-     * @param CacheProvider $cacheProvider
+     * @param FullPageCache $cacheProvider
      */
-    public function __construct(CacheProvider $cacheProvider)
+    public function __construct(FullPageCache $cacheProvider)
     {
         $this->cacheProvider = $cacheProvider;
     }
@@ -46,7 +47,14 @@ class ZendEventListener extends AbstractListenerAggregate
     public function attach(EventManagerInterface $events, $priority = 1)
     {
         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, [$this, 'onRoute'], PHP_INT_MAX - 1);
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinish'], PHP_INT_MAX - 1);
+
+        $priority = PHP_INT_MAX - 1;
+        if (class_exists('\ZF\HttpCache\Module')) {
+            // If this projects is using 'zfcampus/zf-http-cache', then we must ensure that our listener is going to
+            // be executed after 'zfcampus/zf-http-cache' callback, since it add some headers to the response.
+            $priority = -1001;
+        }
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinish'], $priority);
     }
 
     public function onRoute(MvcEvent $e)
@@ -84,8 +92,8 @@ class ZendEventListener extends AbstractListenerAggregate
             return;
         }
 
-        if ($response->getHeaders()->has(CacheProvider::HEADER_FULL_PAGE_CACHE)
-            && $response->getHeaders()->get(CacheProvider::HEADER_FULL_PAGE_CACHE)->getFieldValue() == 'hit'
+        if ($response->getHeaders()->has(FullPageCache::HEADER_FULL_PAGE_CACHE)
+            && $response->getHeaders()->get(FullPageCache::HEADER_FULL_PAGE_CACHE)->getFieldValue() == 'hit'
         ) {
             $e->stopPropagation(true);
             return;
