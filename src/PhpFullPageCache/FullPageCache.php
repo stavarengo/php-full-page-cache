@@ -26,17 +26,17 @@ class FullPageCache
     /**
      * @var ContentNormalizerOfHeadersThatVaryInterface[]
      */
-    private $headerNormalizers;
+    private $contentNormalizerOfHeadersThatVary;
 
     /**
      * CacheProvider constructor.
      * @param CacheItemPoolInterface $store
-     * @param ContentNormalizerOfHeadersThatVaryInterface[] $headerNormalizers
+     * @param ContentNormalizerOfHeadersThatVaryInterface[] $contentNormalizerOfHeadersThatVary
      */
-    public function __construct(CacheItemPoolInterface $store, array $headerNormalizers)
+    public function __construct(CacheItemPoolInterface $store, array $contentNormalizerOfHeadersThatVary)
     {
         $this->store = $store;
-        $this->headerNormalizers = $headerNormalizers;
+        $this->contentNormalizerOfHeadersThatVary = $contentNormalizerOfHeadersThatVary;
     }
 
     public function getCachedResponse(RequestInterface $request): ?ResponseInterface
@@ -118,9 +118,9 @@ class FullPageCache
         foreach ($varyHeaders as $header => $value) {
             $lowerCaseHeaderName = strtolower($header);
             $value = strtolower($value);
-            foreach ($this->headerNormalizers as $headerNormalizer) {
-                if ($headerNormalizer->canNormalizeContentsFrom($lowerCaseHeaderName)) {
-                    $value = $headerNormalizer->normalize($value, $lowerCaseHeaderName);
+            foreach ($this->contentNormalizerOfHeadersThatVary as $normalizer) {
+                if ($normalizer->canNormalizeContentsFrom($lowerCaseHeaderName)) {
+                    $value = $normalizer->normalize($value, $lowerCaseHeaderName);
                 }
             }
 

@@ -53,6 +53,7 @@ class EventListener extends AbstractListenerAggregate
             // If this projects is using 'zfcampus/zf-http-cache', then we must ensure that our listener is going to
             // be executed after 'zfcampus/zf-http-cache' callback, since it add some headers to the response.
             $priority = -1001;
+            $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinishBeforeZendHttpCacheListener'], -999);
         }
         $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinish'], $priority);
     }
@@ -83,12 +84,11 @@ class EventListener extends AbstractListenerAggregate
         }
     }
 
-    public function onFinish(MvcEvent $e)
+    public function onFinishBeforeZendHttpCacheListener(MvcEvent $e)
     {
         $response = $e->getResponse();
-        $request = $e->getRequest();
 
-        if (!($response instanceof Response) || !($request instanceof Request)) {
+        if (!($response instanceof Response)) {
             return;
         }
 
@@ -96,6 +96,16 @@ class EventListener extends AbstractListenerAggregate
             && $response->getHeaders()->get(FullPageCache::HEADER_FULL_PAGE_CACHE)->getFieldValue() == 'hit'
         ) {
             $e->stopPropagation(true);
+            return $response;
+        }
+    }
+
+    public function onFinish(MvcEvent $e)
+    {
+        $response = $e->getResponse();
+        $request = $e->getRequest();
+
+        if (!($response instanceof Response) || !($request instanceof Request)) {
             return;
         }
 

@@ -9,11 +9,21 @@
 namespace Sta\FullPageCache;
 
 use Psr\Container\ContainerInterface;
+use Sta\FullPageCache\ContentNormalizerOfHeadersThatVary\ContentNormalizerOfHeadersThatVaryInterface;
 
 class FullPageCacheFactory
 {
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        return new FullPageCache($container->get(CachePoolFactory::class));
+        $config = $container->get('config');
+        $normalizers = $config[ConfigProvider::class][ContentNormalizerOfHeadersThatVaryInterface::class]['enabled'];
+
+        foreach ($normalizers as $key => $normalizer) {
+            if (is_string($normalizer)) {
+                $normalizers[$key] = $container->get($normalizer);
+            }
+        }
+
+        return new FullPageCache($container->get(CachePoolFactory::class), $normalizers);
     }
 }

@@ -8,6 +8,7 @@ class Module
         $provider = new ConfigProvider();
 
         return [
+            ConfigProvider::class => $provider->getConfig(),
             'service_manager' => $provider->getDependencyConfig(),
         ];
     }
