@@ -26,6 +26,7 @@ class CachePoolFactory
      */
     public function __invoke(ContainerInterface $container)
     {
+        //return new \Cache\Adapter\PHPArray\ArrayCachePool();
         return new FilesystemCachePool(
             new Filesystem(new Local(sys_get_temp_dir())),
             FullPageCache::CACHE_NAMESPACE

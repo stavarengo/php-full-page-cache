@@ -17,7 +17,7 @@ use Zend\Http\Header\CacheControl;
 class FullPageCache
 {
     public const CACHE_NAMESPACE = 'sta-full-page-cache';
-    public const HEADER_FULL_PAGE_CACHE = 'X-Sta-Full-Page-Cache';
+    public const HEADER_FULL_PAGE_CACHE = 'X-Sta-Fpc';
 
     /**
      * @var CacheItemPoolInterface
@@ -68,6 +68,16 @@ class FullPageCache
 
     public function cacheResponse(ResponseInterface $response, RequestInterface $request): void
     {
+        if ($response->getStatusCode() == 304) {
+            // If another library has already set this response to 304
+            return;
+        }
+
+        $response = $this->setNotModified($request, $response);
+        if ($response->getStatusCode() == 304) {
+            return;
+        }
+
         $cacheControlLine = $response->getHeaderLine('Cache-Control');
         if (!$cacheControlLine) {
             return;
@@ -181,4 +191,21 @@ class FullPageCache
         return $response;
     }
 
+    private function setNotModified(RequestInterface $request, ResponseInterface $response)
+    {
+        $requestETags = $request->getHeaderLine('If-None-Match');
+        $responseETag = $response->getHeaderLine('Etag');
+        if (!$requestETags || !$responseETag) {
+            return $response;
+        }
+
+        $requestETags = array_filter(array_map('trim', explode(',', $requestETags)));
+
+        if (in_array($responseETag, $requestETags) || in_array('*', $requestETags)) {
+            $response = $response->withStatus(304)
+                                 ->withBody(\GuzzleHttp\Psr7\stream_for(null));
+        }
+
+        return $response;
+    }
 }
