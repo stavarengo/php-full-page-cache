@@ -8,6 +8,8 @@
 
 namespace Sta\FullPageCache;
 
+use Cache\Hierarchy\HierarchicalPoolInterface;
+use Cache\Prefixed\PrefixedCachePool;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -35,13 +37,16 @@ class FullPageCache
      */
     public function __construct(CacheItemPoolInterface $store, array $contentNormalizerOfHeadersThatVary)
     {
+        if (!($store instanceof PrefixedCachePool)) {
+            $store = new PrefixedCachePool($store, self::CACHE_NAMESPACE);
+        }
         $this->store = $store;
         $this->contentNormalizerOfHeadersThatVary = $contentNormalizerOfHeadersThatVary;
     }
 
     public function getCachedResponse(RequestInterface $request): ?ResponseInterface
     {
-        $metadataCacheId = $this->getMetadataCacheId($request);
+        $metadataCacheId = $this->getMetadataCacheKey($request);
         $cacheItem = $this->store->getItem($metadataCacheId);
 
         if (!$cacheItem->isHit()) {
@@ -51,7 +56,7 @@ class FullPageCache
         /** @var RequestMetadata $cacheMetadata */
         $cacheMetadata = $cacheItem->get();
 
-        $responseCacheId = $this->getResponseCacheId($request, $cacheMetadata->getVary());
+        $responseCacheId = $this->getResponseCacheKey($request, $cacheMetadata->getVary());
         $cacheItem = $this->store->getItem($responseCacheId);
 
         if (!$cacheItem->isHit()) {
@@ -103,20 +108,20 @@ class FullPageCache
 
         $expiresAfter = new \DateInterval('PT' . $maxAge . 'S');
 
-        $requestCacheId = $this->getResponseCacheId($request, $vary);
+        $requestCacheId = $this->getResponseCacheKey($request, $vary);
         $cacheItem = $this->store->getItem($requestCacheId);
         $cacheItem->set($this->psrResponseToString($response));
         $cacheItem->expiresAfter($expiresAfter);
         $this->store->save($cacheItem);
 
-        $metadataCacheId = $this->getMetadataCacheId($request);
+        $metadataCacheId = $this->getMetadataCacheKey($request);
         $cacheItem = $this->store->getItem($metadataCacheId);
         $cacheItem->set(new RequestMetadata($vary));
         $cacheItem->expiresAfter($expiresAfter);
         $this->store->save($cacheItem);
     }
 
-    private function getResponseCacheId(RequestInterface $request, array $vary): string
+    private function getResponseCacheKey(RequestInterface $request, array $vary): string
     {
         $vary = array_unique(array_filter(array_map('trim', $vary)));
         $varyHeaders = [];
@@ -139,24 +144,16 @@ class FullPageCache
 
         ksort($normalizedVaryHeaders);
 
-        $cacheId = trim(
-            sprintf(
-                '%s %s %s %s %s %s',
-                strtolower($request->getMethod()),
-                $request->getUri()->getUserInfo(),
-                $request->getUri()->getPath(),
-                $request->getUri()->getQuery(),
-                $request->getUri()->getFragment(),
-                implode(',', $normalizedVaryHeaders)
-            )
-        );
+        $cacheKey = trim(implode(',', $normalizedVaryHeaders));
 
-        return md5('RESPONSE:' . $cacheId);
+        $cacheKey = $this->getMetadataCacheKey($request) . md5($cacheKey);
+
+        return $cacheKey;
     }
 
-    private function getMetadataCacheId(RequestInterface $request): string
+    private function getMetadataCacheKey(RequestInterface $request): string
     {
-        $cacheId = trim(
+        $cacheKey = trim(
             sprintf(
                 '%s %s %s %s %s',
                 strtolower($request->getMethod()),
@@ -167,7 +164,9 @@ class FullPageCache
             )
         );
 
-        return md5('METADATA:' . $cacheId);
+        $cacheKey = md5($cacheKey);
+
+        return $cacheKey;
     }
 
     /**

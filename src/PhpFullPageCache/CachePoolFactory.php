@@ -9,9 +9,6 @@
 namespace Sta\FullPageCache;
 
 
-use Cache\Adapter\Filesystem\FilesystemCachePool;
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Container\ContainerInterface;
 
@@ -26,10 +23,21 @@ class CachePoolFactory
      */
     public function __invoke(ContainerInterface $container)
     {
-        //return new \Cache\Adapter\PHPArray\ArrayCachePool();
-        return new FilesystemCachePool(
-            new Filesystem(new Local(sys_get_temp_dir())),
-            FullPageCache::CACHE_NAMESPACE
-        );
+        // Memory Cache
+        return new \Cache\Adapter\PHPArray\ArrayCachePool();
+
+        // Example of a filesystem cache
+        //return new \Cache\Adapter\Filesystem\FilesystemCachePool(
+        //    new \League\Flysystem\Filesystem(
+        //        new \League\Flysystem\Adapter\Local(
+        //            sys_get_temp_dir()
+        //        )
+        //    )
+        //);
+
+        // Example of a Redis cache - See https://github.com/phpredis/phpredis
+        //$redisClient = new \Redis();
+        //$redisClient->connect('redis-host', 6379);
+        //return new \Cache\Adapter\Redis\RedisCachePool($redisClient);
     }
 }
