@@ -18,7 +18,7 @@ use Zend\Http\Header\CacheControl;
 
 class FullPageCache
 {
-    public const CACHE_NAMESPACE = 'sta-full-page-cache';
+    public const CACHE_NAMESPACE = 'sta_fpc_';
     public const HEADER_FULL_PAGE_CACHE = 'X-Sta-Fpc';
 
     /**
@@ -146,7 +146,7 @@ class FullPageCache
 
         $cacheKey = trim(implode(',', $normalizedVaryHeaders));
 
-        $cacheKey = $this->getMetadataCacheKey($request) . md5($cacheKey);
+        $cacheKey = $this->getMetadataCacheKey($request) . '_' . md5($cacheKey);
 
         return $cacheKey;
     }
